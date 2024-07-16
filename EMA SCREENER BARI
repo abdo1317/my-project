@@ -1,0 +1,191 @@
+//@version=5
+//acknolwedgements at the botoom
+indicator( "EMA Screener BARI", overlay=true)
+
+len1 = input.int(9, minval=1, title="MA1")
+len2 = input.int(21, minval=1, title="MA2")
+
+// RSI 
+rsiLengthInput = input.int(14, minval=1, title="RSI Length", group="RSI Settings")
+rsiSourceInput = input.source(close, "Source", group="RSI Settings")
+rsiUp = ta.rma(math.max(ta.change(rsiSourceInput), 0), rsiLengthInput)
+rsiDown = ta.rma(-math.min(ta.change(rsiSourceInput), 0), rsiLengthInput)
+rsi = rsiDown == 0 ? 100 : rsiUp == 0 ? 0 : 100 - (100 / (1 + rsiUp / rsiDown))
+
+ma1 = ta.sma(close, len1)
+ma2 = ta.sma(close, len2)
+
+
+
+plot(ma1, title="MA1", color=color.green)
+plot(ma2, title="MA2", color=color.red,linewidth=2)
+
+
+
+longCond = bool(na)
+shortCond = bool(na)
+longCond := ma1 > ma2 and rsi>50// and ma2 > ma3 and ma3 > ma4
+shortCond :=  ma1 < ma2 and rsi<50// and ma2 < ma3// and rsi<35// and ma3 < ma4
+
+CondIni = 0
+CondIni := longCond ? 1 : shortCond ? -1 : CondIni[1]
+longCondition = longCond and CondIni[1] == -1
+shortCondition = shortCond and CondIni[1] == 1
+
+plotshape(longCondition, title="Buy Signal", text="B", textcolor=color.white, style=shape.labelup, size=size.tiny, location=location.belowbar, color=color.green)
+plotshape(shortCondition, title="Short Signal", text="S", textcolor=color.white, style=shape.labeldown, size=size.tiny, location=location.abovebar, color=color.red)
+
+barcolor(high <= high[1] ?  low >= low[1] ? close >= open ? color.yellow :na :na : na)
+barcolor(high <= high[1] ?  low >= low[1] ? close <= open ? color.black :na :na : na)
+
+//////////////////////// Screener Section ////////////////////////////
+
+var tableTheme = "========= Table Theme ========="
+bgColor = input.color(#d1d4dc, "Background", group = tableTheme, inline = "table")
+frameColor = input.color(color.white, "Frame", group = tableTheme, inline = "table")
+textcolor = input.color(color.rgb(0, 0, 0), "Text", group = tableTheme, inline = "table")
+
+textSize = switch input.string("Auto", "Size", options = ['Auto', 'Tiny', 'Small', 'Normal', 'Large', 'Huge'], group = tableTheme)
+    "Auto" => size.auto
+    "Tiny" => size.tiny
+    "Small" => size.small
+    "Normal" => size.normal
+    "Large" => size.large
+    "Huge" => size.huge
+
+location = switch input.string("Top Right", "Table Location", 
+ options = ['Top Right', 'Top Center', 'Top Left', 'Middle Right', 'Middle Center', 'Middle Left', 'Bottom Right', 'Bottom Center', 'Bottom Left'], group = tableTheme)
+    "Top Right" => position.top_right
+    "Top Center" => position.top_center
+    "Top Left" => position.top_left
+    "Middle Right" => position.middle_right
+    "Middle Center" => position.middle_center
+    "Middle Left" => position.middle_left
+    "Bottom Right" => position.bottom_right
+    "Bottom Center" => position.bottom_center
+    "Bottom Left" => position.bottom_left
+
+/////////////////// Screener ////////////////////////
+getSignal(symbol, longArray, shortArray)=>
+    [long, short] = request.security(symbol, "", [longCondition, shortCondition])
+
+    if long
+        longArray.push(symbol)
+
+    if short
+        shortArray.push(symbol)
+
+gticker = '=============== Watchlist ==============='
+symbol1 = input.symbol(defval = "BINANCE:BTCUSDT", title="symbol1", group=gticker)
+symbol2 = input.symbol(defval = "BINANCE:AVAXUSDT", title="symbol2", group=gticker)
+symbol3 = input.symbol(defval = "BINANCE:DOTUSDT", title="symbol3", group=gticker)
+symbol4 = input.symbol(defval = "BINANCE:XRPUSDT", title="symbol4", group=gticker)
+symbol5 = input.symbol(defval = "BINANCE:BNBUSDT", title="symbol5", group=gticker)
+symbol6 = input.symbol(defval = "BINANCE:ADAUSDT", title="symbol6", group=gticker)
+symbol7 = input.symbol(defval = "BINANCE:MATICUSDT", title="symbol7", group=gticker)
+symbol8 = input.symbol(defval = "KUCOIN:TONUSDT", title="symbol8", group=gticker)
+symbol9 = input.symbol(defval = "BINANCE:ETHUSDT", title="symbol9", group=gticker)
+symbol10 = input.symbol(defval = "KUCOIN:TRXUSDT", title="symbol10", group=gticker)
+symbol11 = input.symbol(defval = "KUCOIN:DOGEUSDT", title="symbol11", group=gticker)
+symbol12 = input.symbol(defval = "KUCOIN:SHIBUSDT", title="symbol12", group=gticker)
+symbol13 = input.symbol(defval = "KUCOIN:LINKUSDT", title="symbol13", group=gticker)
+symbol14 = input.symbol(defval = "KUCOIN:BCHUSDT", title="symbol14", group=gticker)
+symbol15 = input.symbol(defval = "KUCOIN:NEARUSDT", title="symbol15", group=gticker)
+symbol16 = input.symbol(defval = "KUCOIN:PEPEUSDT", title="symbol16", group=gticker)
+symbol17 = input.symbol(defval = "KUCOIN:UNIUSDT", title="symbol17", group=gticker)
+symbol18 = input.symbol(defval = "KUCOIN:ICPUSDT", title="symbol18", group=gticker)
+symbol19 = input.symbol(defval = "KUCOIN:KASUSDT", title="symbol19", group=gticker)
+symbol20 = input.symbol(defval = "KUCOIN:ETCUSDT", title="symbol20", group=gticker)
+symbol21 = input.symbol(defval = "KUCOIN:FETUSDT", title="symbol21", group=gticker)
+symbol22 = input.symbol(defval = "KUCOIN:APTUSDT", title="symbol22", group=gticker)
+symbol23 = input.symbol(defval = "KUCOIN:XLMUSDT", title="symbol23", group=gticker)
+symbol24 = input.symbol(defval = "KUCOIN:XMRUSDT", title="symbol24", group=gticker)
+symbol25 = input.symbol(defval = "KUCOIN:HBARUSDT", title="symbol25", group=gticker)
+symbol26 = input.symbol(defval = "KUCOIN:STXUSDT", title="symbol26", group=gticker)
+symbol27 = input.symbol(defval = "KUCOIN:MKRUSDT", title="symbol27", group=gticker)
+symbol28 = input.symbol(defval = "KUCOIN:FILUSDT", title="symbol28", group=gticker)
+symbol29 = input.symbol(defval = "KUCOIN:RNDRUSDT", title="symbol29", group=gticker)
+symbol30 = input.symbol(defval = "KUCOIN:VETUSDT", title="symbol30", group=gticker)
+symbol31 = input.symbol(defval = "KUCOIN:ATOMUSDT", title="symbol2631", group=gticker)
+symbol32 = input.symbol(defval = "KUCOIN:VETUSDT", title="symbol32", group=gticker)
+symbol33 = input.symbol(defval = "KUCOIN:MNTUSDT", title="symbol33", group=gticker)
+symbol34 = input.symbol(defval = "KUCOIN:CROUSDT", title="symbol34", group=gticker)
+symbol35 = input.symbol(defval = "KUCOIN:ARBUSDT", title="symbol35", group=gticker)
+symbol36 = input.symbol(defval = "KUCOIN:IMXUSDT", title="symbol36", group=gticker)
+symbol37 = input.symbol(defval = "KUCOIN:INJUSDT", title="symbol37", group=gticker)
+symbol38 = input.symbol(defval = "KUCOIN:SUIUSDT", title="symbol38", group=gticker)
+symbol39 = input.symbol(defval = "KUCOIN:WIFUSDT", title="symbol39", group=gticker)
+symbol40 = input.symbol(defval = "KUCOIN:TAOUSDT", title="symbol40", group=gticker)
+
+
+
+longArray = array.new_string(na)
+shortArray = array.new_string(na)
+
+getSignal(symbol1,longArray, shortArray)
+getSignal(symbol2,longArray, shortArray)
+getSignal(symbol3,longArray, shortArray)
+getSignal(symbol4,longArray, shortArray)
+getSignal(symbol5,longArray, shortArray)
+getSignal(symbol6,longArray, shortArray)
+getSignal(symbol7,longArray, shortArray)
+getSignal(symbol8,longArray, shortArray)
+getSignal(symbol9,longArray, shortArray)
+getSignal(symbol10,longArray, shortArray)
+getSignal(symbol11,longArray, shortArray)
+getSignal(symbol12,longArray, shortArray)
+getSignal(symbol13,longArray, shortArray)
+getSignal(symbol14,longArray, shortArray)
+getSignal(symbol15,longArray, shortArray)
+getSignal(symbol16,longArray, shortArray)
+getSignal(symbol17,longArray, shortArray)
+getSignal(symbol18,longArray, shortArray)
+getSignal(symbol19,longArray, shortArray)
+getSignal(symbol20,longArray, shortArray)
+getSignal(symbol21,longArray, shortArray)
+getSignal(symbol22,longArray, shortArray)
+getSignal(symbol23,longArray, shortArray)
+getSignal(symbol24,longArray, shortArray)
+getSignal(symbol25,longArray, shortArray)
+getSignal(symbol26,longArray, shortArray)
+getSignal(symbol27,longArray, shortArray)
+getSignal(symbol28,longArray, shortArray)
+getSignal(symbol29,longArray, shortArray)
+getSignal(symbol30,longArray, shortArray)
+getSignal(symbol31,longArray, shortArray)
+getSignal(symbol32,longArray, shortArray)
+getSignal(symbol33,longArray, shortArray)
+getSignal(symbol34,longArray, shortArray)
+getSignal(symbol35,longArray, shortArray)
+getSignal(symbol36,longArray, shortArray)
+getSignal(symbol37,longArray, shortArray)
+getSignal(symbol38,longArray, shortArray)
+getSignal(symbol39,longArray, shortArray)
+getSignal(symbol40,longArray, shortArray)
+
+
+getSym(sym)=>
+    str.tostring(array.get(str.split(sym, ":"), 1))
+    
+if barstate.islast
+    rowSize = math.max(longArray.size(), shortArray.size())
+    dashboard = table.new(location, 2, rowSize + 3, border_color = frameColor, border_width = 1)
+    dashboard.cell(0, 0, text = "Screener", bgcolor = bgColor, text_size = textSize, text_color = textcolor)
+    dashboard.merge_cells(0, 0, 1, 0)
+
+    dashboard.cell(0, 1, text = "Long Signal", bgcolor = color.lime, text_size = textSize, text_color = color.black)
+    dashboard.cell(1, 1, text = "Short Signal", bgcolor = color.red, text_size = textSize, text_color = color.white)
+
+    if longArray.size() > 0
+        for i = 0 to longArray.size() - 1
+            dashboard.cell(0, i + 2, getSym(longArray.get(i)), text_color = textcolor, bgcolor = color.lime, text_size = textSize)
+    else
+        dashboard.cell(0, 2, text = "No Signal", bgcolor = color.yellow, text_size = textSize, text_color = color.black)
+
+    if shortArray.size() > 0
+        for i = 0 to shortArray.size() - 1
+            dashboard.cell(1, i + 2, getSym(shortArray.get(i)), text_color = textcolor, bgcolor = color.red, text_size = textSize)
+    else
+        dashboard.cell(1, 2, text = "No Signal", bgcolor = color.yellow, text_size = textSize, text_color = color.black)
+        
+//open source acknolwedgements - Linear Regression Candles indicator by ugurvu, UT Bot Alerts indicator by QuantNomad
