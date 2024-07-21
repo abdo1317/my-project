@@ -1,0 +1,434 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © DoctaBot
+
+//@version=5
+indicator('Divergence Screener bari6', shorttitle = 'Div. Screener bari6', overlay = true)
+/////////////////////Indicators///////////////////////
+// Macd
+[macd, signal, hist] = ta.macd(close, 12, 26, 9)
+// Mfi
+mfi = ta.mfi(hlc3, 14)
+// Stoch
+k = ta.sma(ta.stoch(close, high, low, 14), 1)
+stoch = ta.sma(k, 3)
+OBV = ta.obv
+RSI = ta.rsi(close, 14)
+rsidelta    = ta.mom(RSI, 9)
+rsisma      = ta.sma(ta.rsi(close, 3), 3)
+FSR         = rsidelta+rsisma  
+
+IndSel1 = input.string('RSI',   title = 'Indicator 1', group = 'Indicators', options = ['MACD', 'MFI', 'Stoch', 'OBV', 'RSI', 'FSR']) 
+IndSel2 = input.string('OBV',   title = 'Indicator 2', group = 'Indicators', options = ['MACD', 'MFI', 'Stoch', 'OBV', 'RSI', 'FSR'])
+IndSel3 = input.string('MACD',  title = 'Indicator 3', group = 'Indicators', options = ['MACD', 'MFI', 'Stoch', 'OBV', 'RSI', 'FSR'])
+
+Ind1 = switch IndSel1
+    'MACD' => macd,
+    'MFI' => mfi,
+    'Stoch' => stoch,
+    'OBV' => OBV,
+    'FSR' => FSR,
+    => RSI
+
+Ind2 = switch IndSel2
+    'MACD' => macd,
+    'MFI' => mfi,
+    'Stoch' => stoch,
+    'OBV' => OBV,
+    'FSR' => FSR,
+    => RSI
+
+Ind3 = switch IndSel3
+    'MACD' => macd,
+    'MFI' => mfi,
+    'Stoch' => stoch,
+    'OBV' => OBV,
+    'FSR' => FSR,
+    => RSI
+
+//////////////////////////////////////////////////////
+
+plotBull        = input.bool(defval = true, title = 'Regular Bullish   ',           group = 'Alert Options',        inline = 'Divs1')
+plotBear        = input.bool(defval = true, title = 'Regular Bearish',              group = 'Alert Options',        inline = 'Divs1')
+plotHiddenBull  = input.bool(defval = false, title = 'Hidden Bullish   ',           group = 'Alert Options',        inline = 'Divs2')
+plotHiddenBear  = input.bool(defval = false, title = 'Hidden Bearish',              group = 'Alert Options',        inline = 'Divs2')
+PotAlerts       = input.bool(defval = false, title = 'Potential Divergences',       group = 'Alert Options',        inline = 'Divs3')
+AlertFilt       = input.string('All',   title = 'Alert Confluence Filter',      group = 'Alert Options',        inline = 'Divs4', options = ['All', 'Min 2', 'Triple Only'])
+rangeLower      = input.int(defval = 2,     title = 'Min/Max of Lookback Range',    group = 'Divergence Settings',  inline = 'Divs5', minval = 2)
+rangeUpper      = input.int(defval = 20,    title = '',                             group = 'Divergence Settings',  inline = 'Divs5')
+lbR             = 1
+lbL             = 1
+
+
+CustAsset1      = input.symbol(defval='ENAUSDT',           group = 'Assets', inline = 'Assets4',   title ='Custom 1 & 2')
+CustAsset2      = input.symbol(defval='NEOUSDT',            group = 'Assets', inline = 'Assets4',   title ='')
+CustAsset3      = input.symbol(defval='XTZUSDT',          group = 'Assets', inline = 'Assets5',   title ='Custom 3 & 4')
+CustAsset4      = input.symbol(defval='GALAUSDT',          group = 'Assets', inline = 'Assets5',   title ='')
+CustAsset5      = input.symbol(defval='ORDIUSDT',           group = 'Assets', inline = 'Assets6',   title ='Custom 5 & 6')
+CustAsset6      = input.symbol(defval='RONUSDT',           group = 'Assets', inline = 'Assets6',   title ='')
+CustAsset7      = input.symbol(defval='SANDUSDT',           group = 'Assets', inline = 'Assets7',   title ='Custom 7 & 8')
+CustAsset8      = input.symbol(defval='WLDUSDT',           group = 'Assets', inline = 'Assets8',   title ='')
+CustAsset9      = input.symbol(defval='CFXUSDT',           group = 'Assets', inline = 'Assets9',   title ='Custom 9 & 10')
+CustAsset10     = input.symbol(defval='PENDLEUSDT',           group = 'Assets', inline = 'Assets9',   title ='')
+CustAsset11     = input.symbol(defval='XECUSDT',          group = 'Assets', inline = 'Assets10',   title ='Custom 11 & 12')
+CustAsset12     = input.symbol(defval='NEXOUSDT',           group = 'Assets', inline = 'Assets10',   title ='')
+CustAsset13     = input.symbol(defval='MOGUSDT',           group = 'Assets', inline = 'Assets11',   title ='Custom 13 & 14')
+CustAsset14     = input.symbol(defval='HNTUSDT',          group = 'Assets', inline = 'Assets11',   title ='')
+
+//----------//COLOR OPTIONS//----------//
+DispTab         = input.bool(true, title = 'Table',     group = 'Table', inline = 'Table0')
+TabLocOpt       = input.string(defval = 'Bottom Right', group = 'Table', inline = 'Table0', title ='', options =['Bottom Right', 'Bottom Left', 'Top Right', 'Top Left', 'Top Center', 'Bottom Center'])
+LightMode       = input.bool(defval=false,              group = 'Table', inline = 'Table1', title = 'Invert Text Colors', tooltip='Useful if you view charts in Light Mode')
+BullBaseCol     = input.color(defval = color.green,   group = 'Table', inline = 'Table2', title = 'Bull/Bear Colors')
+BearBaseCol     = input.color(defval = color.red,     group = 'Table', inline = 'Table2', title = '')
+BullColor1      = color.new(BullBaseCol, 25)
+BullColor2      = color.new(BullBaseCol, 75)
+BearColor1      = color.new(BearBaseCol, 25)
+BearColor2      = color.new(BearBaseCol, 75)
+noneColor       = color.new(color.white, 100)
+
+//Load Pivots{
+//Check Arrays are even to ensure Price and Bar values have been added properly
+f_checkPivArrays(float[] PriceArr, float[] OscArr, int[] BarsArr) =>
+    if array.size(PriceArr) != array.size(OscArr) or array.size(PriceArr) != array.size(BarsArr) or array.size(OscArr) != array.size(BarsArr)
+        runtime.error('Array sizes are not equal!')
+
+//Load new Price, Osc, and Bar values into their respective arrays        
+f_loadNewPivValues(float[] PriceArr, Price, float[] OscArr, Osc, int[] BarsArr, Bars) =>
+    f_checkPivArrays(PriceArr, OscArr, BarsArr)
+    array.unshift(PriceArr, Price)
+    array.unshift(OscArr, Osc)
+    array.unshift(BarsArr, Bars)
+    
+f_loadPivArrays(_osc) =>
+    phFound = na(ta.pivothigh(_osc, lbL, lbR)) ? false : true
+    plFound = na(ta.pivotlow(_osc, lbL, lbR)) ? false : true
+    
+    //Declare Pivot High Arrays
+    var PricePHArr  = array.new_float()
+    var OscPHArr    = array.new_float()
+    var BarPHArr    = array.new_int()
+    
+    //Declare Pivot Low Arrays
+    var PricePLArr  = array.new_float()
+    var OscPLArr    = array.new_float()
+    var BarPLArr    = array.new_int()
+    
+    //Declare Pivot Values
+    PricePH = math.max(open[lbR], close[lbR]) //ta.highest(close, lbR + 2)
+    PricePL = math.min(open[lbR], close[lbR]) //ta.lowest(close, lbR + 2)
+    
+    //Load Pivot High Values into Arrays and remove pivots outside range lookback
+    if phFound
+        f_loadNewPivValues(PricePHArr, PricePH, OscPHArr, _osc[lbR], BarPHArr, bar_index - lbR)
+    if bar_index - array.min(BarPHArr) > rangeUpper
+        array.pop(PricePHArr)
+        array.pop(OscPHArr)
+        array.pop(BarPHArr)
+    //Load Pivot Low Values into Arrays and remove pivots outside range lookback
+    if plFound
+        f_loadNewPivValues(PricePLArr, PricePL, OscPLArr, _osc[lbR], BarPLArr, bar_index - lbR)
+    if bar_index - array.min(BarPLArr) > rangeUpper
+        array.pop(PricePLArr)
+        array.pop(OscPLArr)
+        array.pop(BarPLArr)
+    [PricePH, PricePL, phFound, plFound, PricePHArr, OscPHArr, BarPHArr, PricePLArr, OscPLArr, BarPLArr] //}
+
+//Get Divergences{
+f_getDivergence(_osc, _plotOn, _divType, _divDir, _conf)=>
+    [PricePH, PricePL, phFound, plFound, PricePHArr, OscPHArr, BarPHArr, PricePLArr, OscPLArr, BarPLArr] = f_loadPivArrays(_osc)
+    _OscArr     = _divDir == 'Bull' ? OscPLArr : OscPHArr
+    _PriceArr   = _divDir == 'Bull' ? PricePLArr : PricePHArr
+    _BarArr     = _divDir == 'Bull' ? BarPLArr : BarPHArr
+    IntLBStart  = _conf ? lbR + 1 : 1
+    DivCount    = 0
+    OscEnd      = _conf ? _osc[lbR] : _osc
+    PriceEnd    = _conf ? _divDir == 'Bull' ? PricePL : PricePH : close
+    BarEnd      = _conf ? bar_index - lbR : bar_index
+    if array.size(_OscArr) > 0
+        for i = array.size(_OscArr) - 1 to 0
+            OscStart    = array.get(_OscArr, i)
+            PriceStart  = array.get(_PriceArr, i)
+            BarStart    = array.get(_BarArr, i)
+            oscH        = OscEnd > OscStart
+            oscL        = OscEnd < OscStart
+            PriceH      = PriceEnd > PriceStart
+            PriceL      = PriceEnd < PriceStart
+            DivLen      = BarEnd - BarStart
+            Divergence  = (_conf ? _divDir == 'Bull' ? plFound : phFound : true) and (((_divType == 'Regular' and _divDir == 'Bull') or (_divType == 'Hidden' and _divDir == 'Bear')) ? (oscH and PriceL) : (oscL and PriceH))
+            if DivLen >= rangeLower and Divergence and _plotOn
+                NoIntersect = true
+                OscSlope    = (OscEnd - OscStart)/(BarEnd - BarStart)
+                PriceSlope  = (PriceEnd - PriceStart)/(BarEnd - BarStart)
+                OscLine     = OscEnd - OscSlope
+                PriceLine   = PriceEnd - PriceSlope
+                for x = IntLBStart to DivLen - 1
+                    if (_divDir == 'Bull' and (_osc[x] < OscLine or nz(close[x]) < PriceLine)) or (_divDir == 'Bear' and (_osc[x] > OscLine or nz(close[x]) > PriceLine))
+                        NoIntersect := false
+                        break
+                    OscLine     -= OscSlope
+                    PriceLine   -= PriceSlope
+                    NoIntersect
+                if NoIntersect
+                    DivCount := DivCount + 1
+                DivCount
+    DivCount  
+
+////////////////////////////////Screener////////////////////////////////////////////
+f_getAllDivs() =>
+    //Indicator 1
+    //Confirmed
+    Ind1RegBullDiv      = f_getDivergence(Ind1, plotBull, 'Regular', 'Bull', true)
+    Ind1HidBullDiv      = f_getDivergence(Ind1, plotHiddenBull, 'Hidden', 'Bull', true)
+    Ind1RegBearDiv      = f_getDivergence(Ind1, plotBear, 'Regular', 'Bear', true)
+    Ind1HidBearDiv      = f_getDivergence(Ind1, plotHiddenBear, 'Hidden', 'Bear', true)
+    Ind1BullDivCount    = Ind1RegBullDiv + Ind1HidBullDiv
+    Ind1BearDivCount    = Ind1RegBearDiv + Ind1HidBearDiv
+    Ind1BullDiv         = Ind1BullDivCount > 0
+    Ind1BearDiv         = Ind1BearDivCount > 0   
+    //Potentials
+    PotInd1RegBullDiv   = f_getDivergence(Ind1, PotAlerts and plotBull, 'Regular', 'Bull', false)
+    PotInd1HidBullDiv   = f_getDivergence(Ind1, PotAlerts and plotHiddenBull, 'Hidden', 'Bull', false)
+    PotInd1RegBearDiv   = f_getDivergence(Ind1, PotAlerts and plotBear, 'Regular', 'Bear', false)
+    PotInd1HidBearDiv   = f_getDivergence(Ind1, PotAlerts and plotHiddenBear, 'Hidden', 'Bear', false)
+    PotInd1BullDivCount = PotInd1RegBullDiv + PotInd1HidBullDiv
+    PotInd1BearDivCount = PotInd1RegBearDiv + PotInd1HidBearDiv
+    PotInd1BullDiv      = PotInd1BullDivCount > 0
+    PotInd1BearDiv      = PotInd1BearDivCount > 0
+
+    //Indicator 2
+    //Confirmed
+    Ind2RegBullDiv      = f_getDivergence(Ind2, plotBull, 'Regular', 'Bull', true)
+    Ind2HidBullDiv      = f_getDivergence(Ind2, plotHiddenBull, 'Hidden', 'Bull', true)
+    Ind2RegBearDiv      = f_getDivergence(Ind2, plotBear, 'Regular', 'Bear', true)
+    Ind2HidBearDiv      = f_getDivergence(Ind2, plotHiddenBear, 'Hidden', 'Bear', true)
+    Ind2BullDivCount    = Ind2RegBullDiv + Ind2HidBullDiv
+    Ind2BearDivCount    = Ind2RegBearDiv + Ind2HidBearDiv
+    Ind2BullDiv         = Ind2BullDivCount > 0
+    Ind2BearDiv         = Ind2BearDivCount > 0   
+    //Potentials
+    PotInd2RegBullDiv   = f_getDivergence(Ind2, PotAlerts and plotBull, 'Regular', 'Bull', false)
+    PotInd2HidBullDiv   = f_getDivergence(Ind2, PotAlerts and plotHiddenBull, 'Hidden', 'Bull', false)
+    PotInd2RegBearDiv   = f_getDivergence(Ind2, PotAlerts and plotBear, 'Regular', 'Bear', false)
+    PotInd2HidBearDiv   = f_getDivergence(Ind2, PotAlerts and plotHiddenBear, 'Hidden', 'Bear', false)
+    PotInd2BullDivCount = PotInd2RegBullDiv + PotInd2HidBullDiv
+    PotInd2BearDivCount = PotInd2RegBearDiv + PotInd2HidBearDiv
+    PotInd2BullDiv      = PotInd2BullDivCount > 0
+    PotInd2BearDiv      = PotInd2BearDivCount > 0
+
+    //Indicator 3
+    //Confirmed
+    Ind3RegBullDiv      = f_getDivergence(Ind3, plotBull, 'Regular', 'Bull', true)
+    Ind3HidBullDiv      = f_getDivergence(Ind3, plotHiddenBull, 'Hidden', 'Bull', true)
+    Ind3RegBearDiv      = f_getDivergence(Ind3, plotBear, 'Regular', 'Bear', true)
+    Ind3HidBearDiv      = f_getDivergence(Ind3, plotHiddenBear, 'Hidden', 'Bear', true)
+    Ind3BullDivCount    = Ind3RegBullDiv + Ind3HidBullDiv
+    Ind3BearDivCount    = Ind3RegBearDiv + Ind3HidBearDiv
+    Ind3BullDiv         = Ind3BullDivCount > 0
+    Ind3BearDiv         = Ind3BearDivCount > 0   
+    //Potentials
+    PotInd3RegBullDiv   = f_getDivergence(Ind3, PotAlerts and plotBull, 'Regular', 'Bull', false)
+    PotInd3HidBullDiv   = f_getDivergence(Ind3, PotAlerts and plotHiddenBull, 'Hidden', 'Bull', false)
+    PotInd3RegBearDiv   = f_getDivergence(Ind3, PotAlerts and plotBear, 'Regular', 'Bear', false)
+    PotInd3HidBearDiv   = f_getDivergence(Ind3, PotAlerts and plotHiddenBear, 'Hidden', 'Bear', false)
+    PotInd3BullDivCount = PotInd3RegBullDiv + PotInd3HidBullDiv
+    PotInd3BearDivCount = PotInd3RegBearDiv + PotInd3HidBearDiv
+    PotInd3BullDiv      = PotInd3BullDivCount > 0
+    PotInd3BearDiv      = PotInd3BearDivCount > 0
+   
+    ColInd1             = Ind1BullDiv ? BullColor1 : Ind1BearDiv ? BearColor1 : PotInd1BullDiv ? BullColor2 : PotInd1BearDiv ? BearColor2 : noneColor
+    ColInd2             = Ind2BullDiv ? BullColor1 : Ind2BearDiv ? BearColor1 : PotInd2BullDiv ? BullColor2 : PotInd2BearDiv ? BearColor2 : noneColor
+    ColInd3             = Ind3BullDiv ? BullColor1 : Ind3BearDiv ? BearColor1 : PotInd3BullDiv ? BullColor2 : PotInd3BearDiv ? BearColor2 : noneColor
+    ColorArr            = array.from(ColInd1, ColInd2, ColInd3)
+    DivArr              = array.from(Ind1BullDivCount, Ind1BearDivCount, PotInd1BullDivCount, PotInd1BearDivCount, Ind2BullDivCount, Ind2BearDivCount, PotInd2BullDivCount, PotInd2BearDivCount, Ind3BullDivCount, Ind3BearDivCount, PotInd3BullDivCount, PotInd3BearDivCount)
+    [ColorArr, DivArr]
+ 
+////////////////////////////////////////////////////////////////////////////////
+//                                Securities                                  //
+////////////////////////////////////////////////////////////////////////////////
+[Ass1ColorArr, Ass1DivArr] = request.security(CustAsset1 ,timeframe.period, f_getAllDivs())
+[Ass2ColorArr, Ass2DivArr] = request.security(CustAsset2 ,timeframe.period, f_getAllDivs())
+[Ass3ColorArr, Ass3DivArr] = request.security(CustAsset3 ,timeframe.period, f_getAllDivs())
+[Ass4ColorArr, Ass4DivArr] = request.security(CustAsset4 ,timeframe.period, f_getAllDivs())
+[Ass5ColorArr, Ass5DivArr] = request.security(CustAsset5 ,timeframe.period, f_getAllDivs())
+[Ass6ColorArr, Ass6DivArr] = request.security(CustAsset6 ,timeframe.period, f_getAllDivs())
+[Ass7ColorArr, Ass7DivArr] = request.security(CustAsset7 ,timeframe.period, f_getAllDivs())
+[Ass8ColorArr, Ass8DivArr] = request.security(CustAsset8 ,timeframe.period, f_getAllDivs())
+[Ass9ColorArr, Ass9DivArr] = request.security(CustAsset9 ,timeframe.period, f_getAllDivs())
+[Ass10ColorArr, Ass10DivArr] = request.security(CustAsset10 ,timeframe.period, f_getAllDivs())
+[Ass11ColorArr, Ass11DivArr] = request.security(CustAsset11 ,timeframe.period, f_getAllDivs())
+[Ass12ColorArr, Ass12DivArr] = request.security(CustAsset12 ,timeframe.period, f_getAllDivs())
+[Ass13ColorArr, Ass13DivArr] = request.security(CustAsset13 ,timeframe.period, f_getAllDivs())
+[Ass14ColorArr, Ass14DivArr] = request.security(CustAsset14 ,timeframe.period, f_getAllDivs())
+
+ColorMatrix = matrix.new<color>()
+DivMatrix   = matrix.new<int>()
+if barstate.islast
+    //Load Color Matrix
+    matrix.add_row(ColorMatrix, 0, Ass1ColorArr)
+    matrix.add_row(ColorMatrix, 1, Ass2ColorArr)
+    matrix.add_row(ColorMatrix, 2, Ass3ColorArr)
+    matrix.add_row(ColorMatrix, 3, Ass4ColorArr)
+    matrix.add_row(ColorMatrix, 4, Ass5ColorArr)
+    matrix.add_row(ColorMatrix, 5, Ass6ColorArr)
+    matrix.add_row(ColorMatrix, 6, Ass7ColorArr)
+    matrix.add_row(ColorMatrix, 7, Ass8ColorArr)
+    matrix.add_row(ColorMatrix, 8, Ass9ColorArr)
+    matrix.add_row(ColorMatrix, 9, Ass10ColorArr)
+    matrix.add_row(ColorMatrix, 10, Ass11ColorArr)
+    matrix.add_row(ColorMatrix, 11, Ass12ColorArr)
+    matrix.add_row(ColorMatrix, 12, Ass13ColorArr)
+    matrix.add_row(ColorMatrix, 13, Ass14ColorArr)
+    //Load Div Matrix
+    matrix.add_row(DivMatrix, 0, Ass1DivArr)
+    matrix.add_row(DivMatrix, 1, Ass2DivArr)
+    matrix.add_row(DivMatrix, 2, Ass3DivArr)
+    matrix.add_row(DivMatrix, 3, Ass4DivArr)
+    matrix.add_row(DivMatrix, 4, Ass5DivArr)
+    matrix.add_row(DivMatrix, 5, Ass6DivArr)
+    matrix.add_row(DivMatrix, 6, Ass7DivArr)
+    matrix.add_row(DivMatrix, 7, Ass8DivArr)
+    matrix.add_row(DivMatrix, 8, Ass9DivArr)
+    matrix.add_row(DivMatrix, 9, Ass10DivArr)
+    matrix.add_row(DivMatrix, 10, Ass11DivArr)
+    matrix.add_row(DivMatrix, 11, Ass12DivArr)
+    matrix.add_row(DivMatrix, 12, Ass13DivArr)
+    matrix.add_row(DivMatrix, 13, Ass14DivArr)
+
+Asset1 = array.get(str.split(CustAsset1, ':'), 1)
+Asset2 = array.get(str.split(CustAsset2, ':'), 1)
+Asset3 = array.get(str.split(CustAsset3, ':'), 1)
+Asset4 = array.get(str.split(CustAsset4, ':'), 1)
+Asset5 = array.get(str.split(CustAsset5, ':'), 1)
+Asset6 = array.get(str.split(CustAsset6, ':'), 1)
+Asset7 = array.get(str.split(CustAsset7, ':'), 1)
+Asset8 = array.get(str.split(CustAsset8, ':'), 1)
+Asset9 = array.get(str.split(CustAsset9, ':'), 1)
+Asset10 = array.get(str.split(CustAsset10, ':'), 1)
+Asset11 = array.get(str.split(CustAsset11, ':'), 1)
+Asset12 = array.get(str.split(CustAsset12, ':'), 1)
+Asset13 = array.get(str.split(CustAsset13, ':'), 1)
+Asset14 = array.get(str.split(CustAsset14, ':'), 1)
+AssetArr    = array.from(Asset1, Asset2, Asset3, Asset4, Asset5, Asset6,Asset7, Asset8, Asset9, Asset10, Asset11, Asset12, Asset13, Asset14)
+
+TabLoc = TabLocOpt == 'Bottom Right' ? position.bottom_right : 
+     TabLocOpt == 'Bottom Left' ? position.bottom_left : 
+     TabLocOpt == 'Top Right' ? position.top_right : 
+     TabLocOpt == 'Top Left' ? position.top_left : 
+     TabLocOpt == 'Top Center' ? position.top_center : position.bottom_center
+     
+var table DivTable = table.new(TabLoc, columns = 4, rows = 15, border_width = 1)
+
+//----------//Early Alert Arrays//----------//
+
+if barstate.islast and DispTab
+    //Table Headers
+    HeaderBGCol     = LightMode ? color.black : color.white
+    HeaderTextCol   = LightMode ? color.white : color.black
+    table.cell(DivTable, 0, 0, 'Asset', text_halign = text.align_center, bgcolor = HeaderBGCol, text_color = HeaderTextCol, text_size = size.normal)
+    table.cell(DivTable, 1, 0, IndSel1, text_halign = text.align_center, bgcolor = HeaderBGCol, text_color = HeaderTextCol, text_size = size.normal)
+    table.cell(DivTable, 2, 0, IndSel2, text_halign = text.align_center, bgcolor = HeaderBGCol, text_color = HeaderTextCol, text_size = size.normal)
+    table.cell(DivTable, 3, 0, IndSel3, text_halign = text.align_center, bgcolor = HeaderBGCol, text_color = HeaderTextCol, text_size = size.normal)
+    
+    //Populate Table
+    for i = 0 to 13
+        //Colors
+        Ind1Col     = matrix.get(ColorMatrix, i, 0)
+        Ind2Col     = matrix.get(ColorMatrix, i, 1)
+        Ind3Col     = matrix.get(ColorMatrix, i, 2)
+        Ind1Bull    = Ind1Col == BullColor1 or Ind1Col == BullColor2
+        Ind2Bull    = Ind2Col == BullColor1 or Ind2Col == BullColor2
+        Ind3Bull    = Ind3Col == BullColor1 or Ind3Col == BullColor2
+        Ind1Bear    = Ind1Col == BearColor1 or Ind1Col == BearColor2
+        Ind2Bear    = Ind2Col == BearColor1 or Ind2Col == BearColor2
+        Ind3Bear    = Ind3Col == BearColor1 or Ind3Col == BearColor2
+        AllBull     = Ind1Bull and Ind2Bull and Ind3Bull
+        AllBear     = Ind1Bear and Ind3Bear and Ind3Bear
+        symBGColor  = AllBull ? BullColor1 : AllBear ? BearColor1 : HeaderBGCol
+        symColor    = symBGColor !=  HeaderBGCol ? HeaderBGCol : HeaderTextCol
+        Ind1Mess    = Ind1Col == BullColor1 ? str.tostring(matrix.get(DivMatrix, i, 0)) : Ind1Col == BearColor1 ? str.tostring(matrix.get(DivMatrix, i, 1)) : Ind1Col == BullColor2 ? str.tostring(matrix.get(DivMatrix, i, 2)) : Ind1Col == BearColor2 ? str.tostring(matrix.get(DivMatrix, i, 3)): ''
+        Ind2Mess    = Ind2Col == BullColor1 ? str.tostring(matrix.get(DivMatrix, i, 4)) : Ind2Col == BearColor1 ? str.tostring(matrix.get(DivMatrix, i, 5)) : Ind2Col == BullColor2 ? str.tostring(matrix.get(DivMatrix, i, 6)) : Ind2Col == BearColor2 ? str.tostring(matrix.get(DivMatrix, i, 7)): ''
+        Ind3Mess    = Ind3Col == BullColor1 ? str.tostring(matrix.get(DivMatrix, i, 8)) : Ind3Col == BearColor1 ? str.tostring(matrix.get(DivMatrix, i, 9)) : Ind3Col == BullColor2 ? str.tostring(matrix.get(DivMatrix, i, 10)) : Ind3Col == BearColor2 ? str.tostring(matrix.get(DivMatrix, i, 11)): ''
+
+        //Values
+        table.cell(DivTable, 0, i + 1, array.get(AssetArr, i)   , text_halign = text.align_center, bgcolor = symBGColor,  text_color = symColor, text_size = size.normal)
+        table.cell(DivTable, 1, i + 1, Ind1Mess                 , text_halign = text.align_center, bgcolor = Ind1Col ,  text_color = HeaderBGCol, text_size = size.normal)
+        table.cell(DivTable, 2, i + 1, Ind2Mess                 , text_halign = text.align_center, bgcolor = Ind2Col,   text_color = HeaderBGCol, text_size = size.normal)
+        table.cell(DivTable, 3, i + 1, Ind3Mess                 , text_halign = text.align_center, bgcolor = Ind3Col,   text_color = HeaderBGCol, text_size = size.normal)
+
+// //Alerts
+// BullDivArr      = array.new_bool(0)         //Oversold
+// BearDivArr      = array.new_bool(0)         //Overbought
+// PotBullDivArr   = array.new_bool(0)         //Oversold V2
+// PotBearDivArr   = array.new_bool(0)         //Overbought V2
+f_convertTFtoString(_TF)=>
+    TFConv = _TF == '' ? timeframe.isminutes ? timeframe.multiplier >= 60 ? str.tostring(timeframe.multiplier / 60) + 'H' : str.tostring(timeframe.multiplier) + 'm' : timeframe.period == "D" ? '1D' : timeframe.period :
+     str.endswith(_TF, 'D') or str.endswith(_TF, 'M') ? _TF : str.tonumber(_TF) >= 60 ? str.tostring(str.tonumber(_TF) / 60) + 'H' : _TF + 'm'
+    TFConv
+
+TFConv = f_convertTFtoString('')
+
+AlertFiltText   = AlertFilt == 'Min 2' ? ' Double' : AlertFilt == 'Triple Only' ? ' Triple' : na
+BullDivText     = TFConv + AlertFiltText + ' Bull Div \n'
+BearDivText     = TFConv + AlertFiltText + ' Bear Div \n' 
+
+if barstate.islast
+    for i = 0 to 13
+        Ind1Col     = matrix.get(ColorMatrix, i, 0)
+        Ind2Col     = matrix.get(ColorMatrix, i, 1)
+        Ind3Col     = matrix.get(ColorMatrix, i, 2)
+        Ind1Bull    = Ind1Col == BullColor1 or Ind1Col == BullColor2
+        Ind2Bull    = Ind2Col == BullColor1 or Ind2Col == BullColor2
+        Ind3Bull    = Ind3Col == BullColor1 or Ind3Col == BullColor2
+        Ind1Bear    = Ind1Col == BearColor1 or Ind1Col == BearColor2
+        Ind2Bear    = Ind2Col == BearColor1 or Ind2Col == BearColor2
+        Ind3Bear    = Ind3Col == BearColor1 or Ind3Col == BearColor2
+        AnyBull     = Ind1Bull or Ind2Bull or Ind3Bull
+        AnyBear     = Ind1Bear or Ind2Bear or Ind3Bear
+        Min2Bull    = (Ind1Bull and Ind2Bull) or (Ind1Bull and Ind3Bull) or (Ind2Bull and Ind3Bull)
+        Min2Bear    = (Ind1Bear and Ind2Bear) or (Ind1Bear and Ind3Bear) or (Ind2Bear and Ind3Bear)
+        AllBull     = Ind1Bull and Ind2Bull and Ind3Bull
+        AllBear     = Ind1Bear and Ind3Bear and Ind3Bear
+        if (AnyBull and AlertFilt == 'All') or (Min2Bull and AlertFilt == 'Min 2') or (AllBull and AlertFilt == 'Triple Only')
+            BullDivText := BullDivText + str.tostring(array.get(AssetArr, i)) + ': '
+            if Ind1Col == BullColor1
+                BullDivText := BullDivText + str.tostring(matrix.get(DivMatrix, i, 0)) + 'x ' + IndSel1
+            if Ind1Col == BullColor2
+                BullDivText := BullDivText + str.tostring(matrix.get(DivMatrix, i, 2)) + 'x Pot ' + IndSel1
+            if Ind1Bull and (Ind2Bull or Ind3Bull)
+                BullDivText := BullDivText + ', '
+            if Ind2Col == BullColor1
+                BullDivText := BullDivText + str.tostring(matrix.get(DivMatrix, i, 4)) + 'x ' + IndSel2
+            if Ind2Col == BullColor2
+                BullDivText := BullDivText + str.tostring(matrix.get(DivMatrix, i, 6)) + 'x Pot ' + IndSel2
+            if  Ind2Bull and Ind3Bull
+                BullDivText := BullDivText + ', '
+            if Ind3Col == BullColor1
+                BullDivText := BullDivText + str.tostring(matrix.get(DivMatrix, i, 8)) + 'x ' + IndSel3
+            if Ind3Col == BullColor2
+                BullDivText := BullDivText + str.tostring(matrix.get(DivMatrix, i, 10)) + 'x Pot ' + IndSel3
+            BullDivText := BullDivText + '\n'
+        if (AnyBear and AlertFilt == 'All') or (Min2Bear and AlertFilt == 'Min 2') or (AllBear and AlertFilt == 'Triple Only')
+            BearDivText := BearDivText + str.tostring(array.get(AssetArr, i)) + ': '
+            if Ind1Col == BearColor1
+                BearDivText := BearDivText + str.tostring(matrix.get(DivMatrix, i, 1)) + 'x ' + IndSel1
+            if Ind1Col == BearColor2
+                BearDivText := BearDivText + str.tostring(matrix.get(DivMatrix, i, 3)) + 'x Pot ' + IndSel1
+            if Ind1Bear and (Ind2Bear or Ind3Bear)
+                BearDivText := BearDivText + ', '
+            if Ind2Col == BearColor1
+                BearDivText := BearDivText + str.tostring(matrix.get(DivMatrix, i, 5)) + 'x ' + IndSel2
+            if Ind2Col == BearColor2
+                BearDivText := BearDivText + str.tostring(matrix.get(DivMatrix, i, 7)) + 'x Pot ' + IndSel2
+            if Ind2Bear and Ind3Bear
+                BearDivText := BearDivText + ', '
+            if Ind3Col == BearColor1
+                BearDivText := BearDivText + str.tostring(matrix.get(DivMatrix, i, 9)) + 'x ' + IndSel3
+            if Ind3Col == BearColor2
+                BearDivText := BearDivText + str.tostring(matrix.get(DivMatrix, i, 11)) + 'x Pot' + IndSel3
+            BearDivText := BearDivText + '\n'
+
+if BullDivText != TFConv + AlertFiltText + ' Bull Div \n'
+    alert(BullDivText, alert.freq_once_per_bar_close)
+
+if BearDivText != TFConv + AlertFiltText + ' Bear Div \n' 
+    alert(BearDivText, alert.freq_once_per_bar_close)
